@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Python virtualenv
+.venv/
+
+# Editor / IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# Environment / secrets
+.env
+.env.*
