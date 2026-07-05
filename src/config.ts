@@ -7,10 +7,14 @@ export type Config = {
   currentUserName?: string;
 };
 
-const CONFIG_PATH = join(homedir(), ".gatorconfig.json");
+// Overridable via env var so tests can point at a temp file
+// instead of the real ~/.gatorconfig.json.
+function getConfigPath(): string {
+  return process.env.GATORCONFIG ?? join(homedir(), ".gatorconfig.json");
+}
 
 export function readConfig(): Config {
-  const raw = readFileSync(CONFIG_PATH, "utf-8");
+  const raw = readFileSync(getConfigPath(), "utf-8");
   const parsed = JSON.parse(raw);
   return {
     dbUrl: parsed.db_url,
@@ -25,5 +29,6 @@ export function setUser(config: Config, username: string): void {
     null,
     2
   );
-  writeFileSync(CONFIG_PATH, json, "utf-8");
+  writeFileSync(getConfigPath(), json, "utf-8");
 }
+

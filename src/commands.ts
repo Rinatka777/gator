@@ -1,4 +1,5 @@
 import { readConfig, setUser } from "./config.js";
+import { createUser, getUserByName } from "./lib/db/queries/users.js";
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
@@ -9,9 +10,28 @@ export async function handlerLogin(cmdName: string, ...args: string[]): Promise<
         throw new Error(`usage: ${cmdName} <username>`);
     }
     const username = args[0]
+    const existing = await getUserByName(username);
+    if (!existing) {
+        throw new Error(`User ${username} does not exist`);
+    }
     const config = readConfig();
     setUser(config, username);
     console.log(`Logged in as ${username}`);
+}
+
+export async function handlerRegister(cmdName:string, ...args:string[]){
+    if (args.length === 0) {
+        throw new Error(`usage: ${cmdName} <username>`)
+    }
+    const username = args[0];
+    const existing = await getUserByName(username);
+    if (existing){
+        throw new Error(`User ${username} already exists`)
+    }
+    const user = await createUser(username);
+    const config = readConfig();
+    setUser(config, username);
+    console.log(`User created: ${JSON.stringify(user)}`);
 }
 
 export function registerCommand(
@@ -33,3 +53,4 @@ export async function runCommand(
     }
     await handler(cmdName, ...args);
 }
+

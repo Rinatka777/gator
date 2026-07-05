@@ -4,10 +4,12 @@ import {
   runCommand,
   handlerLogin,
 } from "./commands.js";
+import { handlerRegister } from "./commands.js";
 
 async function main() {
   const registry: CommandsRegistry = {};
   registerCommand(registry, "login", handlerLogin);
+  registerCommand(registry, "register", handlerRegister);
 
   const args = process.argv.slice(2);
   if (args.length === 0) {

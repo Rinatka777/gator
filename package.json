@@ -4,7 +4,7 @@
   "description": "CLI tool that allows users to:",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
     "start": "tsx ./src/index.ts",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate"
@@ -25,7 +25,8 @@
     "@types/node": "^25.8.0",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.22.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",
