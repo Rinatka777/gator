@@ -1,0 +1,3 @@
+{
+  "db_url": "postgres://ekaterinasharifullina@localhost:5432/gator_test?sslmode=disable"
+}

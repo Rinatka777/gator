@@ -7,7 +7,11 @@ export async function createUser(name: string) {
   return result;
 }
 
-export async function getUserByName(name:string){
+export async function getUserByName(name: string): Promise<typeof users.$inferSelect | undefined> {
   const [result] = await db.select().from(users).where(eq(users.name,name));
   return result
+}
+
+export async function deleteAllUsers() {
+  await db.delete(users);
 }

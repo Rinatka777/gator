@@ -1,5 +1,5 @@
 import { readConfig, setUser } from "./config.js";
-import { createUser, getUserByName } from "./lib/db/queries/users.js";
+import { createUser, getUserByName, deleteAllUsers } from "./lib/db/queries/users.js";
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
@@ -32,6 +32,11 @@ export async function handlerRegister(cmdName:string, ...args:string[]){
     const config = readConfig();
     setUser(config, username);
     console.log(`User created: ${JSON.stringify(user)}`);
+}
+
+export async function handlerReset(cmdName: string, ...args: string[]): Promise<void> {
+    await deleteAllUsers();
+    console.log("Database reset: all users deleted");
 }
 
 export function registerCommand(

@@ -79,20 +79,57 @@ describe("handlerLogin", () => {
   // Hint: mockResolvedValue a fake user object ({ id, name, ... }),
   // then assert setUser was called with the right username, e.g.
   // expect(setUser).toHaveBeenCalledWith(expect.anything(), "rinat")
-  it("sets the current user in config when the user exists", async () =>{
+  it("sets the current user in config when the user exists", async () => {
+    vi.mocked(getUserByName).mockResolvedValue({
+      id: "11111111-1111-1111-1111-111111111111",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      name: "rinat",
+    });
 
+    await handlerLogin("login", "rinat");
+
+    expect(getUserByName).toHaveBeenCalledWith("rinat");
+    expect(setUser).toHaveBeenCalledWith(expect.anything(), "rinat");
   });
 });
 
 describe("handlerRegister", () => {
-  // Hint: mock getUserByName to return an existing user, expect the
-  // "already exists" error, and assert createUser was NOT called.
-  it.todo("throws when the username is already taken");
+  it("throws when the username is already taken", async () => {
+    vi.mocked(getUserByName).mockResolvedValue({
+      id: "11111111-1111-1111-1111-111111111111",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      name: "lane",
+    });
 
-  // Hint: mock getUserByName -> undefined and createUser -> a fake user.
-  // Assert createUser was called with the username AND setUser was called
-  // (register should also log you in).
-  it.todo("creates the user and logs them in");
+    await expect(handlerRegister("register", "lane")).rejects.toThrow(
+      "User lane already exists"
+    );
+    expect(createUser).not.toHaveBeenCalled();
+    expect(setUser).not.toHaveBeenCalled();
+  });
 
-  it.todo("throws a usage error when no username is given");
+  it("creates the user and logs them in", async () => {
+    vi.mocked(getUserByName).mockResolvedValue(undefined);
+    vi.mocked(createUser).mockResolvedValue({
+      id: "22222222-2222-2222-2222-222222222222",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      name: "lane",
+    });
+
+    await handlerRegister("register", "lane");
+
+    expect(createUser).toHaveBeenCalledWith("lane");
+    expect(setUser).toHaveBeenCalledWith(expect.anything(), "lane");
+  });
+
+  it("throws a usage error when no username is given", async () => {
+    await expect(handlerRegister("register")).rejects.toThrow(
+      "usage: register <username>"
+    );
+    expect(getUserByName).not.toHaveBeenCalled();
+    expect(createUser).not.toHaveBeenCalled();
+  });
 });

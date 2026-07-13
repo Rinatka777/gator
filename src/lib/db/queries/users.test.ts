@@ -50,27 +50,53 @@ describe.skipIf(!integration)("users queries (integration)", () => {
     expect(user.createdAt).toBeInstanceOf(Date);
   });
 
-  // YOUR TURN:
+  it("getUserByName finds a user that was created", async () => {
+    const { createUser, getUserByName } = await import("./users.js");
 
-  // Hint: createUser("bob"), then getUserByName("bob") — same id back?
-  it.todo("getUserByName finds a user that was created");
+    const created = await createUser("bob");
+    const found = await getUserByName("bob");
 
-  // Hint: what does your function return for a name that isn't there?
-  // (You relied on this in handlerLogin — now prove it.)
-  it.todo("getUserByName returns undefined for a missing user");
+    expect(found).toBeDefined();
+    expect(found!.id).toBe(created.id);
+    expect(found!.name).toBe("bob");
+  });
 
-  // Hint: createUser("carol") twice. The schema says name is .unique() —
-  // expect the second call to reject. Knowing WHICH errors the db throws
-  // is how you write handlers that fail gracefully instead of leaking
-  // stack traces to users.
-  it.todo("createUser rejects a duplicate name (unique constraint)");
+  it("getUserByName returns undefined for a missing user", async () => {
+    const { getUserByName } = await import("./users.js");
 
-  // SECURITY: the classic. Create a user literally named
-  //   "'; DROP TABLE users; --"
-  // then prove the users table still exists (e.g. getUserByName finds
-  // that exact name). This passes because drizzle/postgres.js send
-  // parameterized queries — the input is data, never SQL. If you ever
-  // build queries by string concatenation, this test is the one that
-  // catches it.
-  it.todo("treats a SQL-injection-looking name as literal data");
+    const found = await getUserByName("nobody");
+
+    expect(found).toBeUndefined();
+  });
+
+  it("createUser rejects a duplicate name (unique constraint)", async () => {
+    const { createUser } = await import("./users.js");
+
+    await createUser("carol");
+
+    // drizzle wraps db errors in a DrizzleQueryError ("Failed query: ...");
+    // the actual Postgres unique-violation error is attached as `cause`.
+    const error = await createUser("carol").then(
+      () => {
+        throw new Error("expected duplicate insert to reject");
+      },
+      (err) => err
+    );
+    expect((error.cause as Error).message).toMatch(
+      /duplicate key value violates unique constraint/
+    );
+  });
+
+  it("treats a SQL-injection-looking name as literal data", async () => {
+    const { createUser, getUserByName } = await import("./users.js");
+    const evil = "'; DROP TABLE users; --";
+
+    await createUser(evil);
+
+    // If the input had been executed as SQL, the table would be gone and
+    // this query would blow up. Instead we find the name stored verbatim.
+    const found = await getUserByName(evil);
+    expect(found).toBeDefined();
+    expect(found!.name).toBe(evil);
+  });
 });
