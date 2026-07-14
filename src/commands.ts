@@ -1,5 +1,5 @@
 import { readConfig, setUser } from "./config.js";
-import { createUser, getUserByName, deleteAllUsers } from "./lib/db/queries/users.js";
+import { createUser, getUserByName, deleteAllUsers, getUsers } from "./lib/db/queries/users.js";
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
@@ -59,3 +59,16 @@ export async function runCommand(
     await handler(cmdName, ...args);
 }
 
+export async function handlerUsers(cmdName: string, ...args: string[]): Promise<void> {
+    const allUsers = await getUsers();
+    const config = readConfig();
+    for (const user of allUsers) {
+        let suffix;
+        if (user.name === config.currentUserName) {
+            suffix = " (current)";
+        } else {
+            suffix = "";
+        }
+        console.log(`* ${user.name}${suffix}`);
+    }
+}
