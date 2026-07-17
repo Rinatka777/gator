@@ -1,5 +1,19 @@
 import { XMLParser } from "fast-xml-parser";
 
+export type RSSItem = {
+    title: string;
+    link: string;
+    description: string;
+    pubDate: string;
+};
+
+export type RSSFeed = {
+    title: string;
+    link: string;
+    description: string;
+    items: RSSItem[];
+};
+
 export async function fetchFeed(feedURL: string): Promise<RSSFeed>{
     const response = await fetch(feedURL, {
         headers:{
@@ -18,4 +32,23 @@ export async function fetchFeed(feedURL: string): Promise<RSSFeed>{
     if (!channel.title || !channel.link || !channel.description) {
         throw new Error(`Invalid RSS feed: missing required fields in channel from ${feedURL}`);
     }
+    const rawItems = Array.isArray(channel.item)
+        ? channel.item
+        : channel.item
+          ? [channel.item]
+          : [];
+    const items: RSSItem[] = rawItems
+        .filter((item: any) => item.title && item.link && item.description && item.pubDate)
+        .map((item: any) => ({
+            title: String(item.title),
+            link: String(item.link),
+            description: String(item.description),
+            pubDate: String(item.pubDate),
+        }));
+    return {
+        title: String(channel.title),
+        link: String(channel.link),
+        description: String(channel.description),
+        items,
+    };
 }

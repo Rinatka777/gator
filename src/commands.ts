@@ -1,5 +1,6 @@
 import { readConfig, setUser } from "./config.js";
 import { createUser, getUserByName, deleteAllUsers, getUsers } from "./lib/db/queries/users.js";
+import { fetchFeed } from "./lib/rss.js";
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
@@ -57,6 +58,11 @@ export async function runCommand(
         throw new Error(`Unknown command: ${cmdName}`);
     }
     await handler(cmdName, ...args);
+}
+
+export async function handlerAgg(cmdName: string, ...args: string[]): Promise<void> {
+    const feed = await fetchFeed("https://www.wagslane.dev/index.xml");
+    console.log(JSON.stringify(feed, null, 2));
 }
 
 export async function handlerUsers(cmdName: string, ...args: string[]): Promise<void> {
