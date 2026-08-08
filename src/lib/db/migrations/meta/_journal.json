@@ -8,6 +8,13 @@
       "when": 1782580090306,
       "tag": "0000_stale_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786214691243,
+      "tag": "0001_tricky_toro",
+      "breakpoints": true
     }
   ]
 }

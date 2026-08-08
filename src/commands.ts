@@ -1,6 +1,8 @@
 import { readConfig, setUser } from "./config.js";
 import { createUser, getUserByName, deleteAllUsers, getUsers } from "./lib/db/queries/users.js";
+import { createFeed } from "./lib/db/queries/feed.js";
 import { fetchFeed } from "./lib/rss.js";
+import { Feed, User } from "./lib/db/schema.js";
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
@@ -77,4 +79,25 @@ export async function handlerUsers(cmdName: string, ...args: string[]): Promise<
         }
         console.log(`* ${user.name}${suffix}`);
     }
+}
+
+function printFeed(feed: Feed, user: User): void {
+    console.log(`* ${feed.name} (${feed.url}) added by ${user.name}`);
+}
+
+export async function handlerAddFeed(cmdName: string, ...args: string[]): Promise<void> {
+    if (args.length < 2) {
+        throw new Error(`usage: ${cmdName} <name> <url>`);
+    }
+    const [name, url] = args;
+    const config = readConfig();
+    if (!config.currentUserName) {
+        throw new Error("no user is currently logged in");
+    }
+    const user = await getUserByName(config.currentUserName);
+    if (!user) {
+        throw new Error(`user ${config.currentUserName} does not exist`);
+    }
+    const feed = await createFeed(name, url, user.id);
+    printFeed(feed, user);
 }
