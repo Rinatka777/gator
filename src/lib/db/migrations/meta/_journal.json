@@ -15,6 +15,13 @@
       "when": 1786214691243,
       "tag": "0001_tricky_toro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787250089086,
+      "tag": "0002_dry_shotgun",
+      "breakpoints": true
     }
   ]
 }
