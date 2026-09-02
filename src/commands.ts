@@ -101,3 +101,4 @@ export async function handlerAddFeed(cmdName: string, ...args: string[]): Promis
     const feed = await createFeed(name, url, user.id);
     printFeed(feed, user);
 }
+

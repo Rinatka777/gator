@@ -1,4 +1,4 @@
-import { pgTable, uuid, timestamp, text } from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, text, unique } from "drizzle-orm/pg-core";
 
 // Table definitions go here.
 export const users = pgTable("users", {
@@ -32,6 +32,16 @@ export const posts = pgTable("posts", {
   feedId: uuid("feed_id").notNull().references(() => feeds.id, { onDelete: "cascade" }),
 });
 
+
+export const follows = pgTable("follows", {
+  id: uuid("id").primaryKey().defaultRandom().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
+  feedId: uuid("feed_id").notNull().references(() => feeds.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(()=> users.id, { onDelete: "cascade" })
+}, (t) => [unique().on(t.userId, t.feedId)])
+
 export type User = typeof users.$inferSelect;
 export type Feed = typeof feeds.$inferSelect;
 export type Post = typeof posts.$inferSelect;
+export type Follow = typeof follows.$inferSelect;
