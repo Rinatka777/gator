@@ -2,7 +2,7 @@ import {
   CommandsRegistry,
   registerCommand,
   runCommand,
-  handlerLogin,
+  handlerLogin, handlerUnfollow,
 } from "./commands.js";
 import { handlerRegister, handlerReset, handlerUsers, handlerAgg, handlerAddFeed, handlerFollow } from "./commands.js";
 
@@ -15,6 +15,7 @@ async function main() {
   registerCommand(registry, "agg", handlerAgg);
   registerCommand(registry, "addfeed", handlerAddFeed);
   registerCommand(registry, "follow", handlerFollow);
+  registerCommand(registry, "unfollow, handlerUnfollow", handlerUnfollow)
 
 
   const args = process.argv.slice(2);
