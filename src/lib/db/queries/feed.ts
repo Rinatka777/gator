@@ -20,7 +20,8 @@ export async function getNextFeedToFetch() {
   return result;
 }
 
-export async function getFeedByUrl(url:string){
-  return await db.select().from(feeds).where(eq(feeds.url, url))
+export async function getFeedByUrl(url: string) {
+  const [result] = await db.select().from(feeds).where(eq(feeds.url, url));
+  return result;
 }
 
