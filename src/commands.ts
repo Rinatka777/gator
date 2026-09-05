@@ -142,3 +142,7 @@ export async function handlerUnfollow(cmdName: string, ...args:string[]):Promise
     await deleteFollow(user.id, feed.id)
     console.log(`user ${user.name} unfollowed ${feed.name}`)
 }
+
+export async function handlerFollowing(cmdName: string, ...args:string[]): Promise <void>{
+    
+}
