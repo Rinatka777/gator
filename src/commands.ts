@@ -1,9 +1,10 @@
 import { readConfig, setUser } from "./config.js";
 import { createUser, getUserByName, deleteAllUsers, getUsers } from "./lib/db/queries/users.js";
-import {createFeed, getFeedByUrl} from "./lib/db/queries/feed.js";
+import {createFeed, getFeedByUrl, getNextFeedToFetch, markFeedFetched} from "./lib/db/queries/feed.js";
 import { fetchFeed } from "./lib/rss.js";
 import { Feed, User } from "./lib/db/schema.js";
 import {createFollow, deleteFollow, getFollow, getFollowsForUser} from "./lib/db/queries/follows";
+import { createPost } from "./lib/db/queries/posts.js";
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
@@ -83,9 +84,51 @@ export async function runCommand(
     await handler(cmdName, ...args);
 }
 
+function parseDuration(durationStr: string): number {
+    const match = durationStr.match(/^(\d+)(ms|s|m|h)$/);
+    if (!match) {
+        throw new Error(`invalid duration: ${durationStr} (expected e.g. "1s", "1m", "1h")`);
+    }
+    const [, amountStr, unit] = match;
+    const unitToMs: Record<string, number> = { ms: 1, s: 1000, m: 60 * 1000, h: 60 * 60 * 1000 };
+    return Number(amountStr) * unitToMs[unit];
+}
+
+async function scrapeFeeds(): Promise<void> {
+    const feed = await getNextFeedToFetch();
+    if (!feed) {
+        return;
+    }
+    await markFeedFetched(feed.id);
+
+    let rssFeed;
+    try {
+        rssFeed = await fetchFeed(feed.url);
+    } catch (err) {
+        console.error(`error fetching feed ${feed.name}: ${err instanceof Error ? err.message : err}`);
+        return;
+    }
+
+    for (const item of rssFeed.items) {
+        try {
+            await createPost(item.title, item.link, item.description, new Date(item.pubDate), feed.id);
+        } catch (err) {
+            console.error(`error saving post "${item.title}": ${err instanceof Error ? err.message : err}`);
+        }
+    }
+}
+
 export async function handlerAgg(cmdName: string, ...args: string[]): Promise<void> {
-    const feed = await fetchFeed("https://www.wagslane.dev/index.xml");
-    console.log(JSON.stringify(feed, null, 2));
+    if (args.length < 1) {
+        throw new Error(`usage: ${cmdName} <time_between_reqs>`);
+    }
+    const timeBetweenRequests = parseDuration(args[0]);
+    console.log(`Collecting feeds every ${args[0]}`);
+
+    await scrapeFeeds();
+    setInterval(scrapeFeeds, timeBetweenRequests);
+
+    await new Promise<void>(() => {});
 }
 
 export async function handlerUsers(cmdName: string, ...args: string[]): Promise<void> {
@@ -112,6 +155,7 @@ export async function handlerAddFeed(cmdName: string, user: User, ...args: strin
     }
     const [name, url] = args;
     const feed = await createFeed(name, url, user.id);
+    await createFollow(feed.id, user.id);
     printFeed(feed, user);
 }
 
