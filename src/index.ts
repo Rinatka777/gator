@@ -5,7 +5,7 @@ import {
   handlerLogin, handlerUnfollow,
   middlewareLoggedIn,
 } from "./commands.js";
-import { handlerRegister, handlerReset, handlerUsers, handlerAgg, handlerAddFeed, handlerFollow, handlerFollowing } from "./commands.js";
+import { handlerRegister, handlerReset, handlerUsers, handlerAgg, handlerAddFeed, handlerFollow, handlerFollowing, handlerFeeds, handlerBrowse } from "./commands.js";
 
 async function main() {
   const registry: CommandsRegistry = {};
@@ -18,6 +18,8 @@ async function main() {
   registerCommand(registry, "follow", middlewareLoggedIn(handlerFollow));
   registerCommand(registry, "unfollow", middlewareLoggedIn(handlerUnfollow));
   registerCommand(registry, "following", middlewareLoggedIn(handlerFollowing));
+  registerCommand(registry, "feeds", handlerFeeds);
+  registerCommand(registry, "browse", middlewareLoggedIn(handlerBrowse));
 
 
   const args = process.argv.slice(2);

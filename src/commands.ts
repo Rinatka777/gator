@@ -1,10 +1,10 @@
 import { readConfig, setUser } from "./config.js";
 import { createUser, getUserByName, deleteAllUsers, getUsers } from "./lib/db/queries/users.js";
-import {createFeed, getFeedByUrl, getNextFeedToFetch, markFeedFetched} from "./lib/db/queries/feed.js";
+import {createFeed, getFeedByUrl, getNextFeedToFetch, markFeedFetched, getFeeds} from "./lib/db/queries/feed.js";
 import { fetchFeed } from "./lib/rss.js";
 import { Feed, User } from "./lib/db/schema.js";
 import {createFollow, deleteFollow, getFollow, getFollowsForUser} from "./lib/db/queries/follows";
-import { createPost } from "./lib/db/queries/posts.js";
+import { createPost, getPostsForUser } from "./lib/db/queries/posts.js";
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
@@ -84,7 +84,7 @@ export async function runCommand(
     await handler(cmdName, ...args);
 }
 
-function parseDuration(durationStr: string): number {
+export function parseDuration(durationStr: string): number {
     const match = durationStr.match(/^(\d+)(ms|s|m|h)$/);
     if (!match) {
         throw new Error(`invalid duration: ${durationStr} (expected e.g. "1s", "1m", "1h")`);
@@ -94,7 +94,15 @@ function parseDuration(durationStr: string): number {
     return Number(amountStr) * unitToMs[unit];
 }
 
-async function scrapeFeeds(): Promise<void> {
+export function parsePublishedAt(pubDate: string): Date {
+    const date = new Date(pubDate);
+    if (isNaN(date.getTime())) {
+        throw new Error(`could not parse published date: "${pubDate}"`);
+    }
+    return date;
+}
+
+export async function scrapeFeeds(): Promise<void> {
     const feed = await getNextFeedToFetch();
     if (!feed) {
         return;
@@ -111,7 +119,8 @@ async function scrapeFeeds(): Promise<void> {
 
     for (const item of rssFeed.items) {
         try {
-            await createPost(item.title, item.link, item.description, new Date(item.pubDate), feed.id);
+            const publishedAt = parsePublishedAt(item.pubDate);
+            await createPost(item.title, item.link, item.description, publishedAt, feed.id);
         } catch (err) {
             console.error(`error saving post "${item.title}": ${err instanceof Error ? err.message : err}`);
         }
@@ -188,5 +197,32 @@ export async function handlerFollowing(cmdName: string, user: User, ...args:stri
     const follows = await getFollowsForUser(user.id);
     for (const follow of follows) {
         console.log(`* ${follow.feedName}`);
+    }
+}
+
+export async function handlerFeeds(cmdName: string, ...args: string[]): Promise<void> {
+    const allFeeds = await getFeeds();
+    for (const feed of allFeeds) {
+        console.log(`* ${feed.feedName} (${feed.feedUrl}) added by ${feed.userName}`);
+    }
+}
+
+export async function handlerBrowse(cmdName: string, user: User, ...args: string[]): Promise<void> {
+    let limit = 2;
+    if (args.length > 0) {
+        const parsed = Number(args[0]);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+            throw new Error(`usage: ${cmdName} [limit]`);
+        }
+        limit = parsed;
+    }
+
+    const userPosts = await getPostsForUser(user.id, limit);
+    for (const post of userPosts) {
+        console.log(`* ${post.title} (${post.feedName})`);
+        console.log(`  ${post.url}`);
+        console.log(`  ${post.publishedAt.toISOString()}`);
+        console.log(`  ${post.description}`);
+        console.log();
     }
 }
