@@ -1,5 +1,5 @@
 import { db } from "../index.js";
-import { follows } from "../schema.js";
+import { follows, feeds } from "../schema.js";
 import { eq, sql, and } from "drizzle-orm";
 
 export async function createFollow(feedId: string, userId: string) {
@@ -7,7 +7,13 @@ export async function createFollow(feedId: string, userId: string) {
   return result;
 }
 
-export async function getFollowsForUser(userId: string) {return await db.select().from(follows).where(eq(follows.userId,userId))}
+export async function getFollowsForUser(userId: string) {
+  return await db
+    .select({ feedName: feeds.name, feedUrl: feeds.url })
+    .from(follows)
+    .innerJoin(feeds, eq(follows.feedId, feeds.id))
+    .where(eq(follows.userId, userId));
+}
 
 export async function getFollow(userId: string, feedId: string) {
   const [result] = await db

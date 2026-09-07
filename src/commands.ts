@@ -3,7 +3,7 @@ import { createUser, getUserByName, deleteAllUsers, getUsers } from "./lib/db/qu
 import {createFeed, getFeedByUrl} from "./lib/db/queries/feed.js";
 import { fetchFeed } from "./lib/rss.js";
 import { Feed, User } from "./lib/db/schema.js";
-import {createFollow, deleteFollow, getFollow} from "./lib/db/queries/follows";
+import {createFollow, deleteFollow, getFollow, getFollowsForUser} from "./lib/db/queries/follows";
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
@@ -144,5 +144,16 @@ export async function handlerUnfollow(cmdName: string, ...args:string[]):Promise
 }
 
 export async function handlerFollowing(cmdName: string, ...args:string[]): Promise <void>{
-    
+    const config = readConfig()
+    if (!config.currentUserName) {
+        throw new Error("no user is currently logged in");
+    }
+    const user = await getUserByName(config.currentUserName);
+    if(!user){
+        throw new Error(`user ${config.currentUserName} does not exist`);}
+
+    const follows = await getFollowsForUser(user.id);
+    for (const follow of follows) {
+        console.log(`* ${follow.feedName}`);
+    }
 }
