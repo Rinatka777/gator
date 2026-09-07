@@ -8,6 +8,26 @@ import {createFollow, deleteFollow, getFollow, getFollowsForUser} from "./lib/db
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
 
+type LoggedInCommandHandler = (
+    cmdName: string,
+    user: User,
+    ...args: string[]
+) => Promise<void>;
+
+export function middlewareLoggedIn(handler: LoggedInCommandHandler): CommandHandler {
+    return async (cmdName: string, ...args: string[]) => {
+        const config = readConfig();
+        if (!config.currentUserName) {
+            throw new Error("no user is currently logged in");
+        }
+        const user = await getUserByName(config.currentUserName);
+        if (!user) {
+            throw new Error(`user ${config.currentUserName} does not exist`);
+        }
+        await handler(cmdName, user, ...args);
+    };
+}
+
 
 export async function handlerLogin(cmdName: string, ...args: string[]): Promise<void> {
     if (args.length === 0) {
@@ -86,31 +106,16 @@ function printFeed(feed: Feed, user: User): void {
     console.log(`* ${feed.name} (${feed.url}) added by ${user.name}`);
 }
 
-export async function handlerAddFeed(cmdName: string, ...args: string[]): Promise<void> {
+export async function handlerAddFeed(cmdName: string, user: User, ...args: string[]): Promise<void> {
     if (args.length < 2) {
         throw new Error(`usage: ${cmdName} <name> <url>`);
     }
     const [name, url] = args;
-    const config = readConfig();
-    if (!config.currentUserName) {
-        throw new Error("no user is currently logged in");
-    }
-    const user = await getUserByName(config.currentUserName);
-    if (!user) {
-        throw new Error(`user ${config.currentUserName} does not exist`);
-    }
     const feed = await createFeed(name, url, user.id);
     printFeed(feed, user);
 }
 
-export async function handlerFollow(cmdName: string, ...args: string[]): Promise<void> {
-    const config = readConfig()
-    if (!config.currentUserName) {
-        throw new Error("no user is currently logged in");
-    }
-    const user = await getUserByName(config.currentUserName);
-    if(!user){
-        throw new Error(`user ${config.currentUserName} does not exist`);}
+export async function handlerFollow(cmdName: string, user: User, ...args: string[]): Promise<void> {
     const feed = await getFeedByUrl(args[0])
 
     if(!feed){
@@ -124,15 +129,7 @@ export async function handlerFollow(cmdName: string, ...args: string[]): Promise
     console.log(`user ${user.name} is now following ${feed.name} (${feed.url})`)
 }
 
-export async function handlerUnfollow(cmdName: string, ...args:string[]):Promise<void>{
-    const config = readConfig()
-    if(!config.currentUserName){
-        throw new Error("no user is currently logged in");
-    }
-    const user = await getUserByName(config.currentUserName)
-    if(!user){
-        throw new Error(`user ${config.currentUserName} does not exist`);}
-
+export async function handlerUnfollow(cmdName: string, user: User, ...args:string[]):Promise<void>{
     const feed = await getFeedByUrl(args[0])
 
     if(!feed){
@@ -143,15 +140,7 @@ export async function handlerUnfollow(cmdName: string, ...args:string[]):Promise
     console.log(`user ${user.name} unfollowed ${feed.name}`)
 }
 
-export async function handlerFollowing(cmdName: string, ...args:string[]): Promise <void>{
-    const config = readConfig()
-    if (!config.currentUserName) {
-        throw new Error("no user is currently logged in");
-    }
-    const user = await getUserByName(config.currentUserName);
-    if(!user){
-        throw new Error(`user ${config.currentUserName} does not exist`);}
-
+export async function handlerFollowing(cmdName: string, user: User, ...args:string[]): Promise <void>{
     const follows = await getFollowsForUser(user.id);
     for (const follow of follows) {
         console.log(`* ${follow.feedName}`);
